@@ -2,10 +2,14 @@
   "name": "express-courier-world",
   "version": "1.1.0",
   "private": true,
-  "description": "Browser-based Express Courier World website with staff shipment management",
+  "description": "Courier website with parcel tracking, quote requests, booking forms, and staff shipment management",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node prepare-public.js",
-    "dev": "node --watch prepare-public.js"
+    "dev": "node --watch prepare-public.js",
+    "check": "node --check server.js && node --check app.js && node --check admin.js && node --check prepare-public.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

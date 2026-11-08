@@ -15,17 +15,21 @@ const publicFiles = [
   "countries.json"
 ];
 
+// Fail early rather than starting a server that can only return 404s.
+const missing = publicFiles.filter((file) => !fs.existsSync(path.join(root, file)));
+if (missing.length) {
+  console.error(`Cannot prepare website: required file(s) missing: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
 fs.mkdirSync(publicDir, { recursive: true });
 for (const file of publicFiles) {
-  const source = path.join(root, file);
-  if (fs.existsSync(source)) {
-    fs.copyFileSync(source, path.join(publicDir, file));
-  }
+  fs.copyFileSync(path.join(root, file), path.join(publicDir, file));
 }
 
 const assetsDir = path.join(root, "assets");
 if (fs.existsSync(assetsDir)) {
-  fs.cpSync(assetsDir, path.join(publicDir, "assets"), { recursive: true });
+  fs.cpSync(assetsDir, path.join(publicDir, "assets"), { recursive: true, force: true });
 }
 
 require("./server");
