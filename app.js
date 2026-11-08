@@ -1,27 +1,16 @@
-const $ = s => document.querySelector(s);
-$("#year").textContent = new Date().getFullYear();
-let config = {};
-fetch("/api/config").then(r=>r.json()).then(c=>{
-  config=c;
-  if(c.supportEmail){$("#emailLink").href="mailto:"+c.supportEmail;$("#emailText").textContent=c.supportEmail;}
-  if(c.whatsappNumber){$("#waLink").href="https://wa.me/"+c.whatsappNumber;}
-  if(c.liveChatScriptUrl){const s=document.createElement("script");s.src=c.liveChatScriptUrl;s.async=true;document.body.appendChild(s);}
-});
-$("#trackForm").addEventListener("submit",async e=>{
-  e.preventDefault(); const n=$("#trackingNumber").value.trim(); const box=$("#trackResult");
-  box.textContent="Checking shipment records…";
-  try{
-    const r=await fetch("/api/track/"+encodeURIComponent(n)); const d=await r.json();
-    if(!r.ok) throw new Error(d.error);
-    box.innerHTML=`<div class="resultbox"><b>${escapeHtml(d.tracking_number)}</b><p>${escapeHtml(d.status)}</p><p>Recipient: ${escapeHtml(d.recipient)} · Destination: ${escapeHtml(d.destination)}</p><small>Last updated: ${new Date(d.updated_at).toLocaleString()}</small><hr>${d.events.map(ev=>`<div class="event"><b>${escapeHtml(ev.status)}</b><br>${escapeHtml(ev.location)}<br><small>${new Date(ev.timestamp).toLocaleString()} · ${escapeHtml(ev.note||"")}</small></div>`).join("")}</div>`;
-  }catch(err){box.innerHTML=`<div class="resultbox">${escapeHtml(err.message)}</div>`;}
-});
+const $=s=>document.querySelector(s);let config={};
+$("#year").textContent=new Date().getFullYear();
+fetch("/api/config").then(r=>r.json()).then(async c=>{
+ config=c;if(!c.supportEmail){c.supportEmail="paulermicheals@gmail.com";} if(!c.whatsappNumber){c.whatsappNumber="447453961866";} if(c.supportEmail){$("#emailLink").href="mailto:"+c.supportEmail;$("#emailText").textContent=c.supportEmail;}
+ if(c.whatsappNumber){$("#waLink").href="https://wa.me/"+c.whatsappNumber;}
+ if(c.liveChatScriptUrl){const s=document.createElement("script");s.src=c.liveChatScriptUrl;s.async=true;document.body.appendChild(s);}
+ try{const countries=await fetch("/countries.json").then(r=>r.json());document.querySelectorAll(".country-select").forEach(select=>countries.forEach(country=>{const o=document.createElement("option");o.value=country.code;o.textContent=country.name;select.appendChild(o);}));}catch(e){console.error("Country list could not load",e);}
+}).catch(()=>{});
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-async function submitEnquiry(form,kind){
-  const data=Object.fromEntries(new FormData(form)); const msg=form.querySelector(".formmsg");
-  if(msg) msg.textContent="Sending…";
-  try{const r=await fetch("/api/enquiry",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...data,kind})});const d=await r.json();if(!r.ok)throw new Error(d.error);if(msg)msg.textContent=d.message;form.reset();}
-  catch(e){if(msg)msg.textContent=e.message;}
-}
+$("#trackForm").addEventListener("submit",async e=>{e.preventDefault();const n=$("#trackingNumber").value.trim(),box=$("#trackResult");box.textContent="Checking shipment records…";try{const r=await fetch("/api/track/"+encodeURIComponent(n));const d=await r.json();if(!r.ok)throw new Error(d.error);box.innerHTML=`<div class="resultbox"><b>${escapeHtml(d.tracking_number)}</b><p>${escapeHtml(d.status)}</p><p>Destination: ${escapeHtml(d.destination)}</p><small>Last updated: ${new Date(d.updated_at).toLocaleString()}</small><hr>${d.events.map(ev=>`<div class="event"><b>${escapeHtml(ev.status)}</b><br>${escapeHtml(ev.location)}<br><small>${new Date(ev.timestamp).toLocaleString()} · ${escapeHtml(ev.note||"")}</small></div>`).join("")}</div>`;}catch(err){box.innerHTML=`<div class="resultbox">${escapeHtml(err.message)}</div>`;}});
+async function submitEnquiry(form,kind){const data=Object.fromEntries(new FormData(form));const msg=form.querySelector(".formmsg");if(msg)msg.textContent="Sending…";
+ let message=data.message||"";if(kind==="quote"||kind==="booking")message=[`Origin: ${data.originCountry} / ${data.originCity}`,`Destination: ${data.destinationCountry} / ${data.destinationCity}`,`Weight: ${data.weightKg} kg`,`Parcel type: ${data.parcelType||data.service||"Not specified"}`,`Dimensions: ${data.dimensions||"Not supplied"}`,`Service: ${data.service||"Quote request"}`,`Additional details: ${data.details||"None"}`].join("\n");
+ try{const r=await fetch("/api/enquiry",{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":config.csrfToken||""},body:JSON.stringify({name:data.name,email:data.email,message,kind})});const d=await r.json();if(!r.ok)throw new Error(d.error);if(msg)msg.textContent=d.message;form.reset();}catch(e){if(msg)msg.textContent=e.message;}}
 $("#quoteForm").addEventListener("submit",e=>{e.preventDefault();submitEnquiry(e.currentTarget,"quote")});
-$("#chatButton").addEventListener("click",()=>{if(window.Tawk_API&&window.Tawk_API.maximize)window.Tawk_API.maximize();else alert("Live chat will be available once your live-chat provider is connected. Please use email or WhatsApp in the meantime.");});
+$("#bookingForm").addEventListener("submit",e=>{e.preventDefault();submitEnquiry(e.currentTarget,"booking")});
+$("#chatButton").addEventListener("click",()=>{if(window.Tawk_API?.maximize)window.Tawk_API.maximize();else alert("Live chat is not connected yet. Please use email or WhatsApp support.");});
