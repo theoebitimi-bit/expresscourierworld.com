@@ -4,8 +4,8 @@
   "private": true,
   "description": "Browser-based Express Courier World website with staff shipment management",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node prepare-public.js",
+    "dev": "node --watch prepare-public.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
